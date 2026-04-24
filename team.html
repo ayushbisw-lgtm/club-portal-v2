@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Portal - Project Submission</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00e5ff">
+    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Force unregister service worker to prevent caching issues during dev
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <video autoplay muted loop playsinline class="video-background">
+        <source src="background.mp4" type="video/mp4">
+    </video>
+    <div class="background-overlay"></div>
+    
+    <div id="digital-clock">00:00:00</div>
+    <div id="canvas-container"></div>
+    
+    <!-- Robot Companion -->
+    <div id="robot-wrapper">
+        <div id="robot-speech-bubble" style="opacity: 0;"></div>
+        <div id="robot-antenna"></div>
+        <div id="robot-body">
+            <div id="robot-bell"></div>
+            <div id="robot-nose"></div>
+            <div class="eye"><div class="pupil"></div></div>
+            <div class="eye"><div class="pupil"></div></div>
+            <div id="robot-mouth"></div>
+        </div>
+        <div id="robot-hands">
+            <div class="hand left"></div>
+            <div class="hand right"></div>
+        </div>
+        <div id="robot-legs">
+            <div class="leg left"></div>
+            <div class="leg right"></div>
+        </div>
+        <div id="robot-keyboard"></div>
+    </div>
+
+    <!-- Loading Page -->
+    <div id="loading-overlay">
+        <div class="loading-logo-container">
+            <img src="logo_new.jpeg" class="loading-logo-image" alt="Logo">
+        </div>
+        <div class="loading-text">IGNITION...</div>
+        <div class="dashboard-status">ACCESS GRANTED</div>
+        <div class="loading-gauges">
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-numbers">
+                        <span class="gauge-number">0</span>
+                        <span class="gauge-number">2</span>
+                        <span class="gauge-number">4</span>
+                        <span class="gauge-number">6</span>
+                        <span class="gauge-number">8</span>
+                    </div>
+                    <div class="gauge-needle"></div>
+                    <div class="gauge-center"></div>
+                </div>
+                <div class="gauge-label">RPM x1000</div>
+            </div>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-numbers">
+                        <span class="gauge-number">0</span>
+                        <span class="gauge-number">20</span>
+                        <span class="gauge-number">40</span>
+                        <span class="gauge-number">60</span>
+                        <span class="gauge-number">80</span>
+                    </div>
+                    <div class="gauge-needle"></div>
+                    <div class="gauge-center"></div>
+                </div>
+                <div class="gauge-label">BOOST PSI</div>
+            </div>
+        </div>
+        <div class="glass-layer"></div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; display: flex; justify-content: center; align-items: center; background: rgba(16, 5, 21, 0.9); backdrop-filter: blur(5px);">
+        <div class="input-section" style="width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--primary-color); box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);">
+            <img src="logo_new.jpeg" alt="Logo" style="height: 80px; border-radius: 50%; margin-bottom: 10px; margin-top: 20px; box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);">
+            <h1 style="color: var(--primary-color); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;">Team Access</h1>
+            <p style="color: #a0a0a0; margin-bottom: 30px;">Identify yourself to access the portal</p>
+            
+            <div class="form-group">
+                <select id="member-select" style="font-size: 1.1em; padding: 15px;">
+                    <option value="">-- Select Your Identity --</option>
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <input type="password" id="team-password" placeholder="Enter Team Password" style="width: 100%; padding: 15px; font-size: 1.1em; background: rgba(0,0,0,0.5); border: 1px solid var(--primary-color); color: white; border-radius: 5px; outline: none;">
+            </div>
+            
+            <div id="password-reset-hint" style="margin-top: 10px; display: none; font-size: 0.9em; color: var(--danger-color);">
+                Too many wrong attempts. 
+                <span onclick="requestPasswordReset()" style="color: var(--primary-color); cursor: pointer; text-decoration: underline;">
+                    Reset your password
+                </span>
+            </div>
+            
+            <button onclick="enterPortal()" class="submit-btn" style="width: 100%; margin-top: 20px; font-size: 1.2em;">
+                <i class="fas fa-sign-in-alt"></i> Enter Portal
+            </button>
+
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(0, 229, 255, 0.2);">
+                <p style="color: #a0a0a0; margin-bottom: 10px;">Not in the list?</p>
+                <button onclick="showRegistration()" style="background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 10px 20px; border-radius: 5px; cursor: pointer; transition: 0.3s; font-weight: bold; width: 100%;">
+                    <i class="fas fa-user-plus"></i> Register as New Member
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Screen (Initially Hidden) -->
+    <div id="register-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2001; display: none; justify-content: center; align-items: center; background: rgba(16, 5, 21, 0.95); backdrop-filter: blur(8px);">
+        <div class="input-section" style="width: 90%; max-width: 450px; text-align: center; border: 1px solid var(--primary-color); box-shadow: 0 0 30px rgba(0, 229, 255, 0.3); max-height: 90vh; overflow-y: auto;">
+            <h2 style="color: var(--primary-color); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">Member Registration</h2>
+            <p style="color: #a0a0a0; margin-bottom: 25px;">Provide your details to join the team</p>
+            
+            <form id="registration-form" onsubmit="handleRegistration(event)">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <input type="text" id="reg-name" placeholder="Full Name" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 5px; outline: none;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <input type="email" id="reg-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 5px; outline: none;">
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <input type="tel" id="reg-phone" placeholder="Phone Number" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 5px; outline: none;">
+                </div>
+                
+                <button type="submit" class="submit-btn" style="width: 100%; font-size: 1.1em;">
+                    <i class="fas fa-check-circle"></i> Complete Registration
+                </button>
+                
+                <button type="button" onclick="hideRegistration()" style="background: transparent; border: none; color: #a0a0a0; margin-top: 15px; cursor: pointer; text-decoration: underline;">
+                    Back to Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Initially Hidden) -->
+    <div class="container" id="main-dashboard" style="display: none; filter: blur(0); transition: filter 0.5s;">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+            <div>
+                <h1><img src="logo_new.jpeg" alt="Logo" style="height: 1.5em; vertical-align: middle; border-radius: 50%; margin-right: 10px;"> Team Portal</h1>
+                <p>Welcome, <span id="current-member-name" style="color: var(--primary-color); font-weight: bold;">Member</span></p>
+            </div>
+            <button onclick="logout()" style="background: rgba(255, 42, 109, 0.2); border: 1px solid var(--danger-color); color: var(--danger-color); padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </header>
+
+        <!-- Dashboard Stats for Member -->
+        <div class="stats-dashboard" id="member-stats">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                <div class="stat-info">
+                    <h3>Pending Tasks</h3>
+                    <p id="stat-pending">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <h3>Completed</h3>
+                    <p id="stat-completed">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color: #05ffa1;"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <h3>Active Members</h3>
+                    <p id="stat-online">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects List -->
+        <div class="projects-list-section" id="my-projects-section">
+            <h2><i class="fas fa-list-ul"></i> My Assigned Projects</h2>
+            <div id="my-projects-container" class="projects-grid">
+                <!-- Projects will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat with Admin Modal -->
+    <div id="chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 3000;">
+        <button id="chat-toggle-btn" onclick="toggleChat()" style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary-color); border: none; box-shadow: 0 0 20px rgba(0, 229, 255, 0.5); color: #000; font-size: 24px; cursor: pointer; transition: transform 0.3s;">
+            <i class="fas fa-comments"></i>
+        </button>
+        
+        <div id="chat-window" style="display: none; position: absolute; bottom: 80px; right: 0; width: 300px; background: rgba(16, 5, 21, 0.95); border: 1px solid var(--primary-color); border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+            <div style="background: rgba(0, 229, 255, 0.1); padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 1em; color: var(--primary-color);">Message Admin</h3>
+                <span onclick="toggleChat()" style="cursor: pointer; color: var(--danger-color);">&times;</span>
+            </div>
+            <div id="chat-messages" style="height: 250px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Messages will appear here -->
+                <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 5px; align-self: flex-start; max-width: 80%;">
+                    <small style="color: var(--primary-color); display: block; margin-bottom: 2px;">System</small>
+                    <span style="font-size: 0.9em; color: #ddd;">Send a message to the admin directly.</span>
+                </div>
+            </div>
+            <div style="padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 5px;">
+                <input type="text" id="chat-input" placeholder="Type message..." style="flex: 1; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 4px;">
+                <button onclick="sendChatMessage()" style="background: var(--primary-color); border: none; color: #000; padding: 8px 12px; border-radius: 4px; cursor: pointer;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Modal -->
+    <div id="submission-modal" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="input-section" style="width: 90%; max-width: 500px; margin: 0;">
+            <h2 style="margin-bottom: 20px; color: var(--primary-color);">Submit Project</h2>
+            <form id="submission-form">
+                <input type="hidden" id="submit-project-id">
+                <div class="form-group">
+                    <label>Project Link (GitHub/Drive)</label>
+                    <input type="url" id="submit-link" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Or Upload PDF</label>
+                    <input type="file" id="submit-file" accept="application/pdf" style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; color: #fff;">
+                </div>
+                <div class="form-group">
+                    <label>Notes/Comments</label>
+                    <textarea id="submit-notes" rows="3" placeholder="Any details..."></textarea>
+                </div>
+                <div class="form-group" style="flex-direction: row; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Submit</button>
+                    <button type="button" onclick="closeModal()" style="background: var(--secondary-color); color: #fff; padding: 12px 25px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="background.js?v=8"></script>
+    <script src="cursor-effects.js"></script>
+    <script src="transition.js"></script>
+    <script src="team-script.js?v=9"></script>
+    <script>
+      // Register Service Worker for offline support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful');
+            }, err => {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+</body>
+</html>
