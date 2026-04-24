@@ -1,0 +1,28 @@
+[
+    {
+        "sender": "Ayush Biswas",
+        "text": "Password reset requested by Ayush Biswas.",
+        "type": "team-to-admin"
+    },
+    {
+        "sender": "Admin",
+        "text": "Hello Ayush, your password has been reset to: Ayush@2026. Please use it to login.",
+        "recipient": "Ayush Biswas",
+        "type": "admin-reply"
+    },
+    {
+        "sender": "Ayush Biswas",
+        "text": "Password reset requested by Ayush Biswas.",
+        "type": "team-to-admin"
+    },
+    {
+        "sender": "Member",
+        "text": "hi",
+        "type": "team-to-admin"
+    },
+    {
+        "sender": "Member",
+        "text": "hi",
+        "type": "team-to-admin"
+    }
+]
