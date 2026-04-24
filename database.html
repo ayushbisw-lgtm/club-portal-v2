@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Viewer</title>
+    <link rel="stylesheet" href="style.css?v=9">
+    <!-- Three.js for 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        body {
+            padding: 20px;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        h1 {
+            text-align: center;
+            color: #00e5ff;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /* Tabs Styles */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            justify-content: center;
+        }
+        .tab-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #888;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 5px 5px 0 0;
+            transition: all 0.3s;
+            font-size: 1.1em;
+        }
+        .tab-btn:hover {
+            color: #fff;
+            border-color: #666;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .tab-btn.active {
+            background: rgba(0, 229, 255, 0.1);
+            border-color: #00e5ff;
+            color: #00e5ff;
+            border-bottom-color: transparent;
+            box-shadow: 0 -2px 10px rgba(0, 229, 255, 0.1);
+        }
+
+        .section {
+            display: none; /* Hide by default */
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            animation: fadeIn 0.3s ease;
+        }
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            border-bottom: 1px solid #00e5ff;
+            padding-bottom: 10px;
+            color: #ff00ff;
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        th {
+            background-color: rgba(0, 229, 255, 0.1);
+            color: #00e5ff;
+        }
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid #00e5ff;
+            color: #00e5ff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            float: right;
+        }
+        .refresh-btn:hover {
+            background: #00e5ff;
+            color: #000;
+            box-shadow: 0 0 15px #00e5ff;
+        }
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #fff;
+            text-decoration: none;
+            border: 1px solid #fff;
+            padding: 5px 15px;
+        }
+        .nav-link:hover {
+            background: #fff;
+            color: #000;
+        }
+    </style>
+</head>
+<body onload="initAll()">
+    <video autoplay muted loop playsinline class="video-background">
+        <source src="background.mp4" type="video/mp4">
+    </video>
+    <div class="background-overlay"></div>
+    
+    <div id="digital-clock">00:00:00</div>
+    <div id="canvas-container"></div>
+    
+    <!-- Loading Page -->
+    <div id="loading-overlay">
+        <div class="loading-logo-container">
+            <img src="logo_new.jpeg" class="loading-logo-image" alt="Logo">
+        </div>
+        <div class="loading-text">ENGINE STARTING...</div>
+        <div class="dashboard-status">SYSTEM CHECK: OK</div>
+        <div class="loading-gauges">
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-numbers">
+                        <span class="gauge-number">0</span>
+                        <span class="gauge-number">2</span>
+                        <span class="gauge-number">4</span>
+                        <span class="gauge-number">6</span>
+                        <span class="gauge-number">8</span>
+                    </div>
+                    <div class="gauge-needle"></div>
+                    <div class="gauge-center"></div>
+                </div>
+                <div class="gauge-label">RPM x1000</div>
+            </div>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-numbers">
+                        <span class="gauge-number">0</span>
+                        <span class="gauge-number">20</span>
+                        <span class="gauge-number">40</span>
+                        <span class="gauge-number">60</span>
+                        <span class="gauge-number">80</span>
+                    </div>
+                    <div class="gauge-needle"></div>
+                    <div class="gauge-center"></div>
+                </div>
+                <div class="gauge-label">BOOST PSI</div>
+            </div>
+        </div>
+        <div class="glass-layer"></div>
+    </div>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="index.html" class="nav-link">← Back to Dashboard</a>
+            <button class="refresh-btn" onclick="loadAllData()">Refresh Data</button>
+        </div>
+        
+        <h1>Database Viewer</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('projects')">Projects</button>
+            <button class="tab-btn" onclick="openTab('submissions')">Submissions</button>
+            <button class="tab-btn" onclick="openTab('team')">Team</button>
+            <button class="tab-btn" onclick="openTab('messages')">Messages</button>
+        </div>
+
+        <div id="projects" class="section active">
+            <h2>Projects Table</h2>
+            <div id="projects-content">Loading...</div>
+        </div>
+
+        <div id="submissions" class="section">
+            <h2>Submitted Files</h2>
+            <div id="submissions-content">Loading...</div>
+        </div>
+
+        <div id="team" class="section">
+            <h2>Team Table</h2>
+            <div id="team-content">Loading...</div>
+        </div>
+
+        <div id="messages" class="section">
+            <h2>Messages Table</h2>
+            <div id="messages-content">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchData(endpoint) {
+            try {
+                const response = await fetch(endpoint, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (e) {
+                console.error(`Error fetching ${endpoint}:`, e);
+                return null;
+            }
+        }
+
+        function createTable(data, columns) {
+            if (!data || data.length === 0) return '<p>No data found.</p>';
+            
+            let html = '<table><thead><tr>';
+            columns.forEach(col => html += `<th>${col}</th>`);
+            html += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    let val = row[col];
+                    if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
+                    if (val === undefined || val === null) val = '-';
+                    html += `<td>${val}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        async function loadAllData() {
+            // Load Projects
+            const projects = await fetchData('/api/projects');
+            const projectCols = ['id', 'name', 'assignee', 'priority', 'deadline', 'completed', 'createdAt'];
+            document.getElementById('projects-content').innerHTML = createTable(projects, projectCols);
+
+            // Load Submissions
+            if (projects && projects.length > 0) {
+                const submittedProjects = projects.filter(p => p.submissionLink || p.submissionFile);
+                
+                if (submittedProjects.length === 0) {
+                     document.getElementById('submissions-content').innerHTML = '<p>No submissions found.</p>';
+                } else {
+                    let html = '<table><thead><tr><th>Submitter</th><th>Project Name</th><th>Submission Date</th><th>File / Link</th></tr></thead><tbody>';
+                    
+                    submittedProjects.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+                    submittedProjects.forEach(project => {
+                        html += '<tr>';
+                        html += `<td>${project.assignee}</td>`;
+                        html += `<td>${project.name}</td>`;
+                        const date = project.submittedAt ? new Date(project.submittedAt).toLocaleString() : '-';
+                        html += `<td>${date}</td>`;
+                        
+                        let links = '';
+                        if (project.submissionLink) {
+                            links += `<a href="${project.submissionLink}" target="_blank" style="color: #00e5ff; margin-right: 10px;">Link</a>`;
+                        }
+                        if (project.submissionFile) {
+                            links += `<a href="/uploads/${project.submissionFile}" target="_blank" style="color: #ff00ff; text-shadow: 0 0 5px #ff00ff;">PDF</a>`;
+                        }
+                        html += `<td>${links}</td>`;
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    document.getElementById('submissions-content').innerHTML = html;
+                }
+            } else {
+                document.getElementById('submissions-content').innerHTML = '<p>No data found.</p>';
+            }
+
+            // Load Team
+            const team = await fetchData('/api/team');
+            const teamCols = ['id', 'name', 'email', 'phone', 'password'];
+            document.getElementById('team-content').innerHTML = createTable(team, teamCols);
+
+            // Load Messages
+            const messages = await fetchData('/api/messages');
+            // Messages might be unstructured, but let's try to find common keys or just dump data
+            let msgCols = ['timestamp'];
+            if (messages && messages.length > 0) {
+                // Get all keys from all messages to be safe, or just take the first one
+                const keys = new Set();
+                messages.forEach(m => Object.keys(m).forEach(k => keys.add(k)));
+                msgCols = Array.from(keys).sort();
+                // Move timestamp to first
+                msgCols = msgCols.filter(c => c !== 'timestamp');
+                msgCols.unshift('timestamp');
+            }
+            document.getElementById('messages-content').innerHTML = createTable(messages, msgCols);
+        }
+
+        function openTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Show target section
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate target button
+            const btn = document.querySelector(`button[onclick="openTab('${tabName}')"]`);
+            if(btn) btn.classList.add('active');
+        }
+
+        // Load on start
+        loadAllData();
+    </script>
+    <script>
+        // Disable Service Worker Registration for now to fix caching issues
+    </script>
+    <script src="background.js?v=8"></script>
+    <script src="cursor-effects.js"></script>
+    <script src="transition.js"></script>
+</body>
+</html>
