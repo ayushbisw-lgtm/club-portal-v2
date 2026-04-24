@@ -1,0 +1,34 @@
+[
+    {
+        "email": "ayushbisw@gmail.com",
+        "id": 1770315490660,
+        "name": "Ayush Biswas",
+        "online": false,
+        "password": "Ayush123",
+        "phone": "9434312464"
+    },
+    {
+        "email": "sayantaniswag99@gmail.com",
+        "id": 1770384857198,
+        "name": "Sayantani Chatterjee ",
+        "online": false,
+        "password": "Sayantani123",
+        "phone": "8697936263"
+    },
+    {
+        "email": "debayanm054@gmail.com",
+        "id": 1770385923345,
+        "name": "Debayan Mukherjee ",
+        "online": false,
+        "password": "Debayan123",
+        "phone": "7005198276"
+    },
+    {
+        "email": "aaratrikbanerjee.pkt@gmail.com",
+        "id": 1770392358725,
+        "name": "Aaratrik Banerjee",
+        "online": false,
+        "password": "Aaratrik123",
+        "phone": "9123638092"
+    }
+]
