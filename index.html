@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Project Manager</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00e5ff">
+    <link rel="stylesheet" href="style.css?v=9">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Three.js for 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Register Service Worker for offline support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('Service Worker: Registered'))
+                    .catch(err => console.log(`Service Worker: Error: ${err}`));
+            });
+        }
+    </script>
+</head>
+<body>
+    <video autoplay muted loop playsinline class="video-background">
+        <source src="background.mp4" type="video/mp4">
+    </video>
+    <div class="background-overlay"></div>
+    
+    <div id="digital-clock">00:00:00</div>
+    
+    <!-- Robot Companion -->
+    <div id="robot-wrapper">
+        <div id="robot-speech-bubble" style="opacity: 0;"></div>
+        <div id="robot-antenna"></div>
+        <div id="robot-body">
+            <div id="robot-bell"></div>
+            <div id="robot-nose"></div>
+            <div class="eye"><div class="pupil"></div></div>
+            <div class="eye"><div class="pupil"></div></div>
+            <div id="robot-mouth"></div>
+        </div>
+        <div id="robot-hands">
+            <div class="hand left"></div>
+            <div class="hand right"></div>
+        </div>
+        <div id="robot-legs">
+            <div class="leg left"></div>
+            <div class="leg right"></div>
+        </div>
+        <div id="robot-keyboard"></div>
+    </div>
+
+    <img src="https://adamasknowledgecity.ac.in/public/media/clients/au_logo.png" class="site-logo" alt="Logo">
+    <div id="canvas-container"></div>
+    
+    <!-- Loading Page -->
+    <div id="loading-overlay">
+        <div class="loading-logo-container">
+            <img src="logo_new.jpeg" class="loading-logo-image" alt="Logo">
+        </div>
+        <div class="loading-text">ENGINE STARTING...</div>
+        <div class="dashboard-status">SYSTEM CHECK: OK</div>
+        <div class="loading-gauges">
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-numbers">
+                        <span class="gauge-number">0</span>
+                        <span class="gauge-number">2</span>
+                        <span class="gauge-number">4</span>
+                        <span class="gauge-number">6</span>
+                        <span class="gauge-number">8</span>
+                    </div>
+                    <div class="gauge-needle"></div>
+                    <div class="gauge-center"></div>
+                </div>
+                <div class="gauge-label">RPM x1000</div>
+            </div>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-numbers">
+                        <span class="gauge-number">0</span>
+                        <span class="gauge-number">20</span>
+                        <span class="gauge-number">40</span>
+                        <span class="gauge-number">60</span>
+                        <span class="gauge-number">80</span>
+                    </div>
+                    <div class="gauge-needle"></div>
+                    <div class="gauge-center"></div>
+                </div>
+                <div class="gauge-label">BOOST PSI</div>
+            </div>
+        </div>
+        <div class="glass-layer"></div>
+    </div>
+
+    <!-- Voice Lock Screen (3D Animated) -->
+    <div id="voice-lock-screen">
+        <canvas id="lock-particles"></canvas>
+        <div class="lock-3d-container">
+            <div class="security-cube">
+                <div class="cube-face front"><i class="fas fa-shield-alt"></i></div>
+                <div class="cube-face back"><i class="fas fa-lock"></i></div>
+                <div class="cube-face right"><i class="fas fa-key"></i></div>
+                <div class="cube-face left"><i class="fas fa-fingerprint"></i></div>
+                <div class="cube-face top"><i class="fas fa-user-secret"></i></div>
+                <div class="cube-face bottom"><i class="fas fa-code"></i></div>
+            </div>
+            <div class="mic-wrapper-3d">
+                <div id="mic-icon">
+                    <i class="fas fa-microphone-alt"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="lock-info-panel">
+            <h1>SYSTEM LOCKED</h1>
+            <p id="lock-status">Click central node to initiate voice scan</p>
+        </div>
+
+        <div class="manual-auth-3d">
+            <input type="password" id="manual-password" placeholder="ADMIN ACCESS CODE">
+        </div>
+    </div>
+
+    <div class="container" id="main-app" style="filter: blur(10px); pointer-events: none; transition: filter 1s ease;">
+        <header>
+            <h1><img src="logo_new.jpeg" alt="Logo" style="height: 1.5em; vertical-align: middle; border-radius: 50%; margin-right: 10px;"> GameLiminals</h1>
+            <p>players into creators</p>
+            <a href="team.html" style="display: inline-block; margin-top: 15px; background: rgba(0, 229, 255, 0.1); color: var(--primary-color); text-decoration: none; border: 1px solid var(--primary-color); padding: 8px 20px; border-radius: 20px; font-size: 0.9em; transition: all 0.3s;"><i class="fas fa-external-link-alt"></i> Open Team Portal</a>
+        </header>
+
+        <!-- Navigation Menu -->
+        <div class="menu-container">
+            <button class="menu-btn" onclick="toggleMenu()">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div class="dropdown-menu" id="main-dropdown-menu">
+                <button class="menu-item" onclick="switchTab('home')">
+                    <i class="fas fa-home"></i> Home
+                </button>
+                <button class="menu-item" onclick="switchTab('projects')">
+                    <i class="fas fa-tasks"></i> Projects
+                </button>
+                <button class="menu-item" onclick="switchTab('status')">
+                    <i class="fas fa-chart-line"></i> Check Status
+                    <span id="status-dot" style="display:none; width: 8px; height: 8px; border-radius: 50%; background: var(--danger-color); box-shadow: 0 0 8px rgba(255,42,109,0.8); margin-left: 6px;"></span>
+                </button>
+                <button class="menu-item" onclick="switchTab('team')">
+                    <i class="fas fa-users"></i> Team Directory
+                </button>
+                <button class="menu-item" onclick="switchTab('pending')">
+                    <i class="fas fa-user-clock"></i> Pending Approvals
+                    <span id="pending-dot" style="display:none; width: 8px; height: 8px; border-radius: 50%; background: #ffea00; box-shadow: 0 0 8px rgba(255,234,0,0.8); margin-left: 6px;"></span>
+                </button>
+                <button class="menu-item" onclick="switchTab('talks')">
+                    <i class="fas fa-comments"></i> Team Talks
+                    <span id="talks-dot" style="display:none; width: 8px; height: 8px; border-radius: 50%; background: var(--primary-color); box-shadow: 0 0 8px rgba(0,229,255,0.8); margin-left: 6px;"></span>
+                </button>
+                <button class="menu-item" onclick="switchTab('submissions')">
+                    <i class="fas fa-inbox"></i> Submissions
+                </button>
+                <a href="database.html" class="menu-item" style="text-decoration: none; display: flex; align-items: center;">
+                    <i class="fas fa-database"></i> Database
+                </a>
+            </div>
+        </div>
+
+        <!-- Home Section -->
+        <div id="home-view">
+            <section class="welcome-section" style="text-align: center; margin-bottom: 40px; background: rgba(0, 229, 255, 0.05); padding: 30px; border-radius: 15px; border: 1px solid rgba(0, 229, 255, 0.2);">
+                <h2 style="color: var(--primary-color); font-size: 2em; margin-bottom: 10px;">Welcome back, Admin</h2>
+                <p style="color: #aaa; font-size: 1.1em;">Everything is under control. Here's your project overview.</p>
+            </section>
+
+            <!-- Dashboard Stats Moved Here -->
+            <section class="stats-dashboard" style="margin-bottom: 40px;">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-folder-open"></i></div>
+                    <div class="stat-info">
+                        <h3>Total Projects</h3>
+                        <p id="stat-total">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                    <div class="stat-info">
+                        <h3>In Progress</h3>
+                        <p id="stat-progress">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <h3>Completed</h3>
+                        <p id="stat-completed">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-info">
+                        <h3>High Priority</h3>
+                        <p id="stat-priority">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="dashboard-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <section class="recent-activity" style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <h3 style="color: var(--primary-color); margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;"><i class="fas fa-history"></i> Quick Actions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="switchTab('projects')" style="background: rgba(0, 229, 255, 0.1); color: var(--primary-color); border: 1px solid var(--primary-color); padding: 10px; border-radius: 5px; cursor: pointer; text-align: left;"><i class="fas fa-plus-circle"></i> Create New Project</button>
+                        <button onclick="switchTab('talks')" style="background: rgba(255, 0, 255, 0.1); color: var(--accent-color); border: 1px solid var(--accent-color); padding: 10px; border-radius: 5px; cursor: pointer; text-align: left;"><i class="fas fa-bullhorn"></i> Broadcast Message</button>
+                        <button onclick="switchTab('team')" style="background: rgba(5, 255, 161, 0.1); color: var(--success-color); border: 1px solid var(--success-color); padding: 10px; border-radius: 5px; cursor: pointer; text-align: left;"><i class="fas fa-user-plus"></i> Add Team Member</button>
+                    </div>
+                </section>
+                
+                <section class="system-status" style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 10px; border: 1px solid #333;">
+                    <h3 style="color: var(--primary-color); margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;"><i class="fas fa-shield-alt"></i> System Health</h3>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Database Connection</span>
+                            <span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Online</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Server Status</span>
+                            <span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Stable</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Active Members</span>
+                            <span id="stat-active-members" style="color: var(--primary-color);">0</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Projects Section -->
+        <div id="projects-view" style="display: none;">
+            <section class="input-section">
+                <form id="project-form">
+                    <div class="form-group">
+                        <label for="project-name">Project Name</label>
+                        <input type="text" id="project-name" placeholder="Enter project name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignee">Assign To</label>
+                        <input type="text" id="assignee" placeholder="Team member name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="deadline">Deadline</label>
+                        <input type="date" id="deadline" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <select id="priority" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notify-method">Notify via</label>
+                        <select id="notify-method">
+                            <option value="Email" selected>Email</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="None">None</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Description</label>
+                        <textarea id="description" placeholder="Project details..." rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Assign Project</button>
+                </form>
+            </section>
+
+            <section class="projects-list-section">
+                <h2>Current Assignments</h2>
+                <div id="projects-container" class="projects-grid">
+                    <!-- Projects will be added here dynamically -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Team Section -->
+        <div id="team-view" style="display: none;">
+            <section class="input-section">
+                <form id="team-form">
+                    <div class="form-group">
+                        <label for="member-name">Name</label>
+                        <input type="text" id="member-name" placeholder="Full Name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="member-email">Email</label>
+                        <input type="email" id="member-email" placeholder="email@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="member-phone">Phone Number</label>
+                        <input type="tel" id="member-phone" placeholder="+1 234 567 8900">
+                    </div>
+
+                    <div class="form-group" style="justify-content: flex-end;">
+                         <!-- Spacer -->
+                         <label>&nbsp;</label>
+                         <button type="submit" class="btn-add"><i class="fas fa-user-plus"></i> Add Member</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="projects-list-section">
+                <h2>Team Members</h2>
+                <div id="team-container" class="projects-grid">
+                    <!-- Team members will be added here -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Pending Approvals Section -->
+        <div id="pending-view" style="display: none;">
+            <section class="projects-list-section">
+                <h2 style="color: #ffea00; margin-bottom: 20px;"><i class="fas fa-user-clock"></i> Pending Team Registrations</h2>
+                <div id="pending-container" class="projects-grid">
+                    <!-- Pending members will be added here -->
+                    <p style="text-align: center; color: #777; grid-column: 1 / -1;">No pending registrations.</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Status Check Section -->
+        <div id="status-view" style="display: none;">
+            <section class="input-section">
+                <h2 style="color: var(--primary-color); margin-bottom: 20px;"><i class="fas fa-search"></i> Project Status Tracker</h2>
+                <input type="text" id="status-search" placeholder="Search by member name..." onkeyup="renderStatus()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: #fff; border-radius: 5px;">
+            </section>
+
+            <section class="projects-list-section">
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; color: #fff; background: rgba(20, 20, 40, 0.6); backdrop-filter: blur(10px);">
+                        <thead>
+                            <tr style="background: rgba(0, 229, 255, 0.1); text-align: left;">
+                                <th style="padding: 15px; border-bottom: 2px solid var(--primary-color);">Member</th>
+                                <th style="padding: 15px; border-bottom: 2px solid var(--primary-color);">Project Name</th>
+                                <th style="padding: 15px; border-bottom: 2px solid var(--primary-color);">Deadline</th>
+                                <th style="padding: 15px; border-bottom: 2px solid var(--primary-color);">Status</th>
+                                <th style="padding: 15px; border-bottom: 2px solid var(--primary-color);">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="status-table-body">
+                            <!-- Rows populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Team Talks Section -->
+        <div id="talks-view" style="display: none;">
+             <section class="input-section" style="max-width: 800px; margin: 0 auto;">
+                <h2 style="color: var(--primary-color); border-bottom: 1px solid var(--primary-color); padding-bottom: 10px; margin-bottom: 20px;"><i class="fas fa-envelope-open-text"></i> Team Messages</h2>
+                
+                <!-- Broadcast Section -->
+                <div style="background: rgba(0, 229, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--primary-color);">
+                    <h3 style="margin-top: 0; color: var(--primary-color); font-size: 1em;"><i class="fas fa-bullhorn"></i> Broadcast to Everyone</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="broadcast-input" placeholder="Type a message for the whole team..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 4px;">
+                        <button onclick="sendBroadcast()" style="background: var(--primary-color); color: #000; border: none; padding: 0 20px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: transform 0.2s;">Send</button>
+                    </div>
+                </div>
+
+                <div id="admin-messages-container" style="display: flex; flex-direction: column; gap: 15px; max-height: 500px; overflow-y: auto;">
+                    <p style="text-align: center; color: #777;">Loading messages...</p>
+                </div>
+                <div style="margin-top: 20px; text-align: center; display: flex; justify-content: center; gap: 15px;">
+                    <button onclick="loadAdminMessages()" class="btn-add" style="width: auto; padding: 8px 20px;"><i class="fas fa-sync-alt"></i> Refresh Messages</button>
+                    <button onclick="clearAllMessages()" class="btn-delete" style="width: auto; padding: 8px 20px; background: rgba(255, 42, 109, 0.2); color: var(--danger-color); border: 1px solid var(--danger-color);"><i class="fas fa-trash-alt"></i> Delete All Messages</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Reply Modal -->
+    <div id="reply-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center;">
+        <div class="input-section" style="width: 90%; max-width: 400px; margin: 0; border: 1px solid var(--primary-color); box-shadow: 0 0 20px rgba(0,229,255,0.3);">
+            <h3 style="color: var(--primary-color); margin-bottom: 15px;">Reply to <span id="reply-recipient-name"></span></h3>
+            <textarea id="reply-text" rows="4" placeholder="Type your reply here..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 15px; resize: vertical;"></textarea>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeReplyModal()" style="background: transparent; border: 1px solid #aaa; color: #aaa; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Cancel</button>
+                <button onclick="sendReply()" style="background: var(--primary-color); border: none; color: #000; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;"><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bot Overlay -->
+    <div id="bot-overlay" class="hidden">
+        <div class="bot-terminal">
+            <div class="bot-header">
+                <i class="fas fa-robot"></i> MailBot v1.0
+                <span class="bot-close" onclick="closeBot()">&times;</span>
+            </div>
+            <div class="bot-content" id="bot-logs">
+                <!-- Logs go here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=9"></script>
+    <script src="transition.js"></script>
+    <script src="background.js?v=8"></script>
+    <script src="cursor-effects.js"></script>
+    <script>
+     
+    </script>
+</body>
+</html>
