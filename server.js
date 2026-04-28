@@ -15,8 +15,18 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
+// Configuration for persistent storage
+const DATA_DIR = process.env.DATABASE_PATH ? path.dirname(process.env.DATABASE_PATH) : __dirname;
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
+const projectsPath = process.env.PROJECTS_JSON_PATH || 'projects.json';
+const messagesPath = process.env.MESSAGES_JSON_PATH || 'messages.json';
+const uploadsDir = process.env.UPLOADS_PATH || path.join(__dirname, 'uploads');
+
+// Ensure directories exist
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
 // Database setup
-const dbPath = path.join(__dirname, 'database.db');
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
@@ -32,11 +42,7 @@ db.serialize(() => {
 // Multer setup for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
-        cb(null, uploadDir);
+        cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + '_' + file.originalname);
@@ -46,7 +52,7 @@ const upload = multer({ storage: storage });
 
 // JSON file helpers
 const getJsonData = (file) => {
-    const filePath = path.join(__dirname, file);
+    const filePath = path.isAbsolute(file) ? file : path.join(DATA_DIR, file);
     if (!fs.existsSync(filePath)) return [];
     try {
         const data = fs.readFileSync(filePath, 'utf8');
@@ -57,7 +63,7 @@ const getJsonData = (file) => {
 };
 
 const saveJsonData = (file, data) => {
-    const filePath = path.join(__dirname, file);
+    const filePath = path.isAbsolute(file) ? file : path.join(DATA_DIR, file);
     fs.writeFileSync(filePath, JSON.stringify(data, null, 4));
 };
 
@@ -65,31 +71,32 @@ const saveJsonData = (file, data) => {
 
 // Projects API
 app.get('/api/projects', (req, res) => {
-    res.json(getJsonData('projects.json'));
+    res.json(getJsonData(projectsPath));
 });
 
 app.post('/api/projects', (req, res) => {
-    const projects = getJsonData('projects.json');
+    const projects = getJsonData(projectsPath);
     const newProject = {
         id: Date.now(),
         ...req.body
     };
     projects.push(newProject);
-    saveJsonData('projects.json', projects);
+    saveJsonData(projectsPath, projects);
     res.json({ success: true, project: newProject });
 });
 
 app.delete('/api/projects/:id', (req, res) => {
-    let projects = getJsonData('projects.json');
+    let projects = getJsonData(projectsPath);
     const initialLength = projects.length;
     projects = projects.filter(p => String(p.id) !== String(req.params.id));
     if (projects.length < initialLength) {
-        saveJsonData('projects.json', projects);
+        saveJsonData(projectsPath, projects);
         res.json({ success: true });
     } else {
         res.status(404).json({ success: false, message: 'Project not found' });
     }
 });
+
 
 // Team API (SQLite)
 app.get('/api/team', (req, res) => {
@@ -132,18 +139,18 @@ app.delete('/api/team/:id', (req, res) => {
 
 // Messages API
 app.get('/api/messages', (req, res) => {
-    res.json(getJsonData('messages.json'));
+    res.json(getJsonData(messagesPath));
 });
 
 app.post('/api/messages', (req, res) => {
-    const messages = getJsonData('messages.json');
+    const messages = getJsonData(messagesPath);
     const newMessage = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
         ...req.body
     };
     messages.push(newMessage);
-    saveJsonData('messages.json', messages);
+    saveJsonData(messagesPath, messages);
     res.json({ success: true, message: newMessage });
 });
 
@@ -173,7 +180,7 @@ app.post('/api/sync', async (req, res) => {
 });
 
 // Serve uploads folder
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Fallback for SPA (if needed)
 app.use((req, res) => {
