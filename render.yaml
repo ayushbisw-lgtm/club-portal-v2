@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: club-portal-v2
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    disk:
+      name: club-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/database.db
+      - key: PROJECTS_JSON_PATH
+        value: /opt/render/project/src/data/projects.json
+      - key: MESSAGES_JSON_PATH
+        value: /opt/render/project/src/data/messages.json
+      - key: UPLOADS_PATH
+        value: /opt/render/project/src/data/uploads
