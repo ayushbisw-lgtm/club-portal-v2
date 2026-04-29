@@ -16,28 +16,48 @@ app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
 // Configuration for persistent storage
-const DATA_DIR = process.env.DATABASE_PATH ? path.dirname(process.env.DATABASE_PATH) : __dirname;
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
+const IS_VERCEL = process.env.VERCEL === '1';
+const DATA_DIR = process.env.DATABASE_PATH ? path.dirname(process.env.DATABASE_PATH) : (IS_VERCEL ? '/tmp' : __dirname);
+const dbPath = process.env.DATABASE_PATH || path.join(DATA_DIR, 'database.db');
 const projectsPath = process.env.PROJECTS_JSON_PATH || 'projects.json';
 const messagesPath = process.env.MESSAGES_JSON_PATH || 'messages.json';
-const uploadsDir = process.env.UPLOADS_PATH || path.join(__dirname, 'uploads');
+const uploadsDir = process.env.UPLOADS_PATH || path.join(DATA_DIR, 'uploads');
 
-// Ensure directories exist
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// Ensure directories exist (wrapped in try-catch for read-only environments like Vercel)
+try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+} catch (e) {
+    console.warn("Could not create directories, likely due to read-only filesystem:", e.message);
+}
 
-// Database setup
-const db = new sqlite3.Database(dbPath);
+// Database setup (with error handling for initialization)
+let db;
+try {
+    db = new sqlite3.Database(dbPath, (err) => {
+        if (err) console.error("Database connection error:", err.message);
+    });
 
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS team (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        role TEXT NOT NULL,
-        password TEXT,
-        approved INTEGER DEFAULT 0
-    )`);
-});
+    db.serialize(() => {
+        db.run(`CREATE TABLE IF NOT EXISTS team (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            role TEXT NOT NULL,
+            password TEXT,
+            approved INTEGER DEFAULT 0
+        )`, (err) => {
+            if (err) console.error("Table creation error:", err.message);
+        });
+    });
+} catch (e) {
+    console.error("Critical database initialization error:", e.message);
+    // Mock db to prevent further crashes
+    db = { 
+        all: (s, p, cb) => cb(new Error("Database not available on Vercel"), []),
+        run: (s, p, cb) => cb && cb(new Error("Database not available on Vercel")),
+        serialize: (fn) => fn()
+    };
+}
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
@@ -64,7 +84,11 @@ const getJsonData = (file) => {
 
 const saveJsonData = (file, data) => {
     const filePath = path.isAbsolute(file) ? file : path.join(DATA_DIR, file);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 4));
+    try {
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 4));
+    } catch (e) {
+        console.error(`Failed to save data to ${file}:`, e.message);
+    }
 };
 
 // --- API ROUTES ---
